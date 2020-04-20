@@ -10,19 +10,19 @@ local theme = {}
 -----------------------------------------------------------------------------------------------------------------------
 theme.color = {
 	-- main colors
-	main      = "#02606D",
+	main      = "#A3BE8C",
 	gray      = "#575757",
 	bg        = "#161616",
 	bg_second = "#181818",
-	wibox     = "#202020",
-	icon      = "#a0a0a0",
+	wibox     = "#2E3440",
+	icon      = "#e5e9f0",
 	text      = "#aaaaaa",
 	urgent    = "#B25500",
 	highlight = "#e0e0e0",
 	border    = "#404040",
 
 	-- secondary colors
-	shadow1   = "#141414",
+	shadow1   = "#d8dee9",
 	shadow2   = "#313131",
 	shadow3   = "#1c1c1c",
 	shadow4   = "#767676",
@@ -1409,8 +1409,8 @@ function theme:init()
 	self.fg_minimize   = self.color.highlight
 
 	self.border_normal = self.color.wibox
-	self.border_focus  = self.color.wibox
-	self.border_marked = self.color.main
+	self.border_focus  = self.color.main
+	self.border_marked = self.color.urgent
 
 	-- font
 	self.font = self.fonts.main
@@ -1418,32 +1418,37 @@ function theme:init()
 	-- standart awesome notification widget
 	self.naughty = {}
 
+-- file = io.open("/home/akemrir/awesome.log", "a")
+-- file:write(self.color.wibox)
+-- file:write("\n")
+-- file:close()
+
 	self.naughty.base = {
 		timeout      = 10,
 		margin       = 12,
 		icon_size    = 80,
 		font         = self.fonts.main,
-		bg           = self.color.wibox,
 		fg           = self.color.text,
+		bg           = self.color.wibox,
 
 		border_width = 4,
 		border_color = self.color.wibox
 	}
 
 	self.naughty.normal = {
-		height = self.float.notify.geometry.height,
-		width = self.float.notify.geometry.width,
+		-- height = self.float.notify.geometry.height,
+		width = self.float.notify.geometry.width
 	}
 
 	self.naughty.low = {
 		timeout = 5,
-		height = self.float.notify.geometry.height,
-		width = self.float.notify.geometry.width,
+		-- height = self.float.notify.geometry.height,
+		width = self.float.notify.geometry.width
 	}
 
 	self.naughty.critical = {
 		timeout = 0,
-		border_color = self.color.main
+		border_color = self.color.urgent
 	}
 end
 

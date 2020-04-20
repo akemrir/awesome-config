@@ -19,17 +19,19 @@ local env = {}
 -- Build hotkeys depended on config parameters
 -----------------------------------------------------------------------------------------------------------------------
 function env:init(args)
-
 	-- init vars
 	args = args or {}
 
 	-- environment vars
 	self.theme = args.theme or "red"
-	self.terminal = args.terminal or "urxvt"
+	self.terminal = args.terminal or "st"
 	self.mod = args.mod or "Mod4"
-	self.fm = args.fm or "nemo"
-	self.mail = args.mail or "thunderbird"
-	self.player = args.player or "pragha"
+	self.alt = args.alt or "Mod1"
+	self.shift = args.shift or "Shift"
+	self.ctrl = args.ctrl or "Control"
+	self.fm = args.fm or "thunar"
+	self.mail = args.mail or "st -e neomutt"
+	self.player = args.player or "mpd"
 	self.updates = args.updates or "bash -c 'pacman -Qu | grep -v ignored | wc -l'"
 	self.home = os.getenv("HOME")
 	self.themedir = awful.util.get_configuration_dir() .. "themes/" .. self.theme
@@ -46,6 +48,7 @@ function env:init(args)
 
 	-- naughty config
 	naughty.config.padding = beautiful.useless_gap and 2 * beautiful.useless_gap or 0
+  naughty.config.defaults.border_width = 4
 
 	if beautiful.naughty then
 		naughty.config.presets.normal   = redflat.util.table.merge(beautiful.naughty.base, beautiful.naughty.normal)
@@ -53,7 +56,6 @@ function env:init(args)
 		naughty.config.presets.low      = redflat.util.table.merge(beautiful.naughty.base, beautiful.naughty.low)
 	end
 end
-
 
 -- Common functions
 -----------------------------------------------------------------------------------------------------------------------

@@ -10,8 +10,48 @@
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
+local redutil = require("redflat.util")
+local system = require("redflat.system")
+local calendar = require("calendar")
 
 require("awful.autofocus")
+
+-- local naughty = require("naughty")
+-- function table.val_to_str ( v )
+--   if "string" == type( v ) then
+--     v = string.gsub( v, "\n", "\\n" )
+--     if string.match( string.gsub(v,"[^'\"]",""), '^"+$' ) then
+--       return "'" .. v .. "'"
+--     end
+--     return '"' .. string.gsub(v,'"', '\\"' ) .. '"'
+--   else
+--     return "table" == type( v ) and table.tostring( v ) or
+--       tostring( v )
+--   end
+-- end
+
+-- function table.key_to_str ( k )
+--   if "string" == type( k ) and string.match( k, "^[_%a][_%a%d]*$" ) then
+--     return k
+--   else
+--     return "[" .. table.val_to_str( k ) .. "]"
+--   end
+-- end
+
+-- function table.tostring( tbl )
+--   local result, done = {}, {}
+--   for k, v in ipairs( tbl ) do
+--     table.insert( result, table.val_to_str( v ) )
+--     done[ k ] = true
+--   end
+--   for k, v in pairs( tbl ) do
+--     if not done[ k ] then
+--       table.insert( result,
+--         table.key_to_str( k ) .. "=" .. table.val_to_str( v ) )
+--     end
+--   end
+--   return "{" .. table.concat( result, "," ) .. "}"
+-- end
 
 -- User modules
 ------------------------------------------------------------
@@ -27,12 +67,10 @@ redflat.startup:activate()
 -----------------------------------------------------------------------------------------------------------------------
 require("colorless.ercheck-config") -- load file with error handling
 
-
 -- Setup theme and environment vars
 -----------------------------------------------------------------------------------------------------------------------
 local env = require("color.blue.env-config") -- load file with environment
-env:init({ theme = "orange" })
-
+env:init({ theme = "orange", color_border_focus = true })
 
 -- Layouts setup
 -----------------------------------------------------------------------------------------------------------------------
@@ -51,7 +89,8 @@ mymenu:init({ env = env })
 
 -- Separator
 --------------------------------------------------------------------------------
-local separator = redflat.gauge.separator.vertical()
+-- local separator = redflat.gauge.separator.vertical()
+local separator = nil
 
 -- Tasklist
 --------------------------------------------------------------------------------
@@ -85,7 +124,15 @@ taglist.buttons = awful.util.table.join(
 -- Textclock widget
 --------------------------------------------------------------------------------
 local textclock = {}
-textclock.widget = redflat.widget.textclock({ timeformat = "%H:%M", dateformat = "%b  %d  %a" })
+textclock.widget = redflat.widget.textclock({ timeformat = "%H:%M", dateformat = "%Y-%m-%d" })
+local calendar_widget = calendar({
+  fdow = 1,                  -- Set Sunday as first day of the week (default is
+                             -- 1 = Monday)
+  position = "top_right", -- Useful if you prefer your wibox at the bottomn
+                             -- of the screen
+  today_color = beautiful.color.main
+})
+calendar_widget:attach(textclock.widget)
 
 -- Software update indcator
 --------------------------------------------------------------------------------
@@ -114,51 +161,81 @@ tray.buttons = awful.util.table.join(
 -- PA volume control
 --------------------------------------------------------------------------------
 local volume = {}
-volume.widget = redflat.widget.pulse(nil, { widget = redflat.gauge.audio.blue.new })
+volume.widget = redflat.widget.pulse(nil, { widget = redflat.gauge.audio.red.new })
 
 -- activate player widget
-redflat.float.player:init({ name = env.player })
+-- redflat.float.player:init({ name = env.player })
 
-volume.buttons = awful.util.table.join(
-	awful.button({}, 4, function() volume.widget:change_volume()                end),
-	awful.button({}, 5, function() volume.widget:change_volume({ down = true }) end),
-	awful.button({}, 2, function() volume.widget:mute()                         end),
-	awful.button({}, 3, function() redflat.float.player:show()                  end),
-	awful.button({}, 1, function() redflat.float.player:action("PlayPause")     end),
-	awful.button({}, 8, function() redflat.float.player:action("Previous")      end),
-	awful.button({}, 9, function() redflat.float.player:action("Next")          end)
-)
+-- volume.buttons = awful.util.table.join(
+-- 	awful.button({}, 4, function() volume.widget:change_volume()                end),
+-- 	awful.button({}, 5, function() volume.widget:change_volume({ down = true }) end),
+-- 	awful.button({}, 2, function() volume.widget:mute()                         end),
+-- 	awful.button({}, 3, function() redflat.float.player:show()                  end),
+-- 	awful.button({}, 1, function() redflat.float.player:action("PlayPause")     end),
+-- 	awful.button({}, 8, function() redflat.float.player:action("Previous")      end),
+-- 	awful.button({}, 9, function() redflat.float.player:action("Next")          end)
+-- )
+
+-- -- naughty.notify({ text = table.tostring(beautiful.theme) })
+-- file = io.open("/home/akemrir/beautiful.x", "a")
+-- -- file:write(table.tostring(beautiful.get()))
+-- -- file:write(table.tostring(beautiful.get().fonts))
+-- -- file:write(beautiful.get().fonts.clock)
+-- file:close()
+
+
+-- load the widget code
+local volume_control = require("volume-control")
+
+local theme = beautiful.get();
+-- file = io.open("/home/akemrir/beautiful.x", "a")
+-- file:write(table.tostring(theme))
+-- file:close()
+
+-- define your volume control, using default settings:
+volumecfg = volume_control({
+  device = "pulse",
+  font = theme.fonts.clock,
+  widget_text = {
+    on  = '<span color="' .. theme.color.icon .. '">% 3d%%</span>',        -- three digits, fill with leading spaces
+    off = '<span color="' .. theme.color.urgent .. '">% 3dM</span>',
+  },
+})
 
 -- Keyboard layout indicator
 --------------------------------------------------------------------------------
-local kbindicator = {}
-redflat.widget.keyboard:init({ "English", "Russian" })
-kbindicator.widget = redflat.widget.keyboard()
+-- local kbindicator = {}
+-- redflat.widget.keyboard:init({ "Polish", "English" })
+-- kbindicator.widget = redflat.widget.keyboard()
 
-kbindicator.buttons = awful.util.table.join(
-	awful.button({}, 1, function () redflat.widget.keyboard:toggle_menu() end),
-	awful.button({}, 4, function () redflat.widget.keyboard:toggle()      end),
-	awful.button({}, 5, function () redflat.widget.keyboard:toggle(true)  end)
-)
+-- kbindicator.buttons = awful.util.table.join(
+-- 	awful.button({}, 1, function () redflat.widget.keyboard:toggle_menu() end),
+-- 	awful.button({}, 4, function () redflat.widget.keyboard:toggle()      end),
+-- 	awful.button({}, 5, function () redflat.widget.keyboard:toggle(true)  end)
+-- )
 
 -- Mail widget
 --------------------------------------------------------------------------------
--- mail settings template
-local my_mails = require("color.blue.mail-example")
+-- -- mail settings template
+-- local my_mails = require("color.blue.mail-example")
 
--- safe load private mail settings
-pcall(function() my_mails = require("private.mail-config") end)
+-- -- safe load private mail settings
+-- pcall(function() my_mails = require("private.mail-config") end)
 
--- widget setup
-local mail = {}
-redflat.widget.mail:init({ maillist = my_mails })
-mail.widget = redflat.widget.mail()
+-- -- widget setup
+-- local mail = {}
+-- redflat.widget.mail:init({ maillist = my_mails })
+-- mail.widget = redflat.widget.mail()
 
--- buttons
-mail.buttons = awful.util.table.join(
-	awful.button({ }, 1, function () awful.spawn.with_shell(env.mail) end),
-	awful.button({ }, 2, function () redflat.widget.mail:update(true) end)
-)
+-- naughty.notify({ text = "normal", urgency = "normal" })
+-- naughty.notify({ text = "low", urgency = "low" })
+-- naughty.notify({ text = "critical", urgency = "critical" })
+
+-- -- buttons
+-- mail.buttons = awful.util.table.join(
+-- 	-- awful.button({ }, 1, function () awful.spawn.with_shell(env.mail) end),
+-- 	-- awful.button({ }, 2, function () redflat.widget.mail:update(true) end)
+-- )
 
 -- System resource monitoring widgets
 --------------------------------------------------------------------------------
@@ -173,7 +250,7 @@ sysmon.widget.battery = redflat.widget.sysmon(
 -- network speed
 sysmon.widget.network = redflat.widget.net(
 	{
-		interface = "wlp60s0",
+		interface = "enp6s0",
 		speed = { up = 6 * 1024^2, down = 6 * 1024^2 },
 		autoscale = false
 	},
@@ -200,6 +277,151 @@ sysmon.buttons.ram = awful.util.table.join(
 	awful.button({ }, 1, function() redflat.float.top:show("mem") end)
 )
 
+local GET_MPD_CMD = "mpc -p 7600 status"
+local NEXT_MPD_CMD = "mpc -p 7600 next"
+local PAUSE_MPD_CMD = "mpc -p 7600 pause"
+local PREV_MPD_CMD = "mpc -p 7600 prev"
+local STOP_MPD_CMD = "mpc -p 7600 stop"
+local TOGGLE_MPD_CMD = "mpc -p 7600 toggle"
+
+local mpd_status = function()
+  local ret = {}
+  ret.text = 'Loading'
+  ret.alert = false
+  ret.value = 0.5
+
+  local line = redutil.read.output(GET_MPD_CMD)
+  local stdout = string.gsub(line, "\n", "")
+  local mpdpercent = string.match(stdout, "(%d+)%%")
+
+  if string.match(stdout, "%[playing]") then
+    local value = tonumber(mpdpercent/100)
+    ret.value = value
+    -- ret.text = 'MPD: '.. mpdpercent .. '% utworu'
+    ret.text = line
+  elseif string.match(stdout, "%[paused]") then
+    local value = tonumber(mpdpercent/100)
+    ret.value = value
+    -- ret.text = 'MPD: '..mpdpercent .. '% utworu'
+    ret.text = line
+    ret.alert = true
+  elseif string.match(stdout, "MPD error") then
+    ret.value = 1
+    ret.text = "MPD: niepodłączone"
+    ret.alert = false
+  else
+    ret.value = 1
+    ret.text = "Sprawdź rc-orange.lua +261"
+    ret.alert = true
+  end
+
+  return ret
+end
+
+sysmon.widget.mpd = redflat.widget.sysmon(
+  { func = mpd_status },
+  { timeout = 1, widget = redflat.gauge.monitor.circle }
+)
+sysmon.buttons.mpd = awful.util.table.join(
+  awful.button({ }, 1, function() awful.spawn(TOGGLE_MPD_CMD) end),
+  awful.button({ }, 2, function() awful.spawn(STOP_MPD_CMD) end),
+  awful.button({ }, 3, function() awful.spawn(PAUSE_MPD_CMD) end),
+  awful.button({ }, 4, function() awful.spawn(NEXT_MPD_CMD) end),
+  awful.button({ }, 5, function() awful.spawn(PREV_MPD_CMD) end),
+  awful.button({ }, 9, function()
+    awful.spawn('/home/akemrir/bin/dmenu-mpd -a now_playing_album_songs')
+  end),
+  awful.button({ }, 8, function()
+    awful.spawn('/home/akemrir/bin/dmenu-mpd -a open_album_dir')
+  end)
+)
+
+local muil = { widget = {} }
+muil.widget = awful.widget.watch('bash -c "cat /home/akemrir/.config/mutt/.dl"', 5)
+
+-- local audio_output = { widget = {} }
+-- audio_output.widget = awful.widget.watch('bash -c "cat /home/akemrir/bin/a-pa-switch.icon"', 3)
+
+local torr = awful.widget.watch('/home/akemrir/bin/i3torrent', 3)
+torr_t = awful.tooltip({ objects = { torr } })
+torr:connect_signal("mouse::enter", function()
+  awful.spawn.easy_async_with_shell('transmission-remote -l', function(stdout, stderr, reason, exit_code)
+    torr_t.text = stdout
+  end)
+end)
+torr:connect_signal("button::press", function()
+  awful.spawn.easy_async_with_shell('thunar /home/akemrir/Pobrane')
+end)
+
+-- local new_record = { widget = {} }
+-- new_record.widget = awful.widget.watch('bash -c "cat /home/akemrir/bin/.record-file"', 3)
+
+-- local record = { widget = {} }
+-- record.widget = awful.widget.watch('bash -c "cat /home/akemrir/bin/.record-state"', 5)
+-- record.widget:connect_signal("button::press", function()
+--   awful.spawn.easy_async_with_shell('notify-send record record')
+-- end)
+
+local record_2 = { widget = {} }
+record_2.widget = wibox.widget {
+    markup = 'This <i>is</i> a <b>textbox</b>!!!',
+    align  = 'center',
+    valign = 'center',
+    widget = wibox.widget.textbox
+}
+-- record_2.widget = wibox.widget.textbox
+record_2.widget:connect_signal("button::press", function()
+  awful.spawn.spawn('bash -c /home/akemrir/bin/dmenu-record')
+end)
+awful.widget.watch('bash -c "cat /home/akemrir/bin/.record-file"', 3, function(widget, stdout)
+  -- naughty.notify({ title = "Achtung!", text = stdout, timeout = 0 })
+  record_2.widget:set_markup(stdout)
+end)
+record_2_t = awful.tooltip({ objects = { record_2.widget } })
+
+-- torr.widget:connect_signal("mouse::enter", function()
+--   awful.spawn.easy_async_with_shell('cat /home/akemrir/bin/.record-file', function(stdout, stderr, reason, exit_code)
+--     record_2_t.text = stdout
+--   end)
+-- end)
+
+
+local device_status = function(parameters)
+  local device = parameters[1]
+  local label = parameters[2]
+
+  local ret = {}
+  local status = system.fs_info("/dev/" .. device)
+  local pused = status[1]
+
+  ret.text = "Dysk " .. device .. " - ".. label .." używa " .. pused .."% swojej pojemności"
+  if pused > 80 then
+    ret.alert = true
+  else
+    ret.alert = false
+  end
+  ret.value = pused/100
+
+  return ret
+end
+
+local DEV_TIMEOUT = 60 * 5
+sysmon.widget.boot_dev = redflat.widget.sysmon(
+  { func = device_status, arg = {'sda3', 'boot'} },
+  { timeout = DEV_TIMEOUT, widget = redflat.gauge.monitor.circle }
+)
+sysmon.widget.root_dev = redflat.widget.sysmon(
+  { func = device_status, arg = {'sda4', 'root'} },
+  { timeout = DEV_TIMEOUT, widget = redflat.gauge.monitor.circle }
+)
+sysmon.widget.var_dev = redflat.widget.sysmon(
+  { func = device_status, arg = {'sdb2', 'var'} },
+  { timeout = DEV_TIMEOUT, widget = redflat.gauge.monitor.circle }
+)
+sysmon.widget.home_dev = redflat.widget.sysmon(
+  { func = device_status, arg = {'sdb4', 'home'} },
+  { timeout = DEV_TIMEOUT, widget = redflat.gauge.monitor.circle }
+)
 
 -- Screen setup
 -----------------------------------------------------------------------------------------------------------------------
@@ -214,7 +436,8 @@ awful.screen.connect_for_each_screen(
 		env.wallpaper(s)
 
 		-- tags
-		awful.tag({ "Main", "Full", "Edit", "Read", "Free", "Vbox" }, s, { al[5], al[6], al[6], al[4], al[5], al[3] })
+    awful.tag({ "code", "browser", "chat", "mail", "music", "chr", "pid" }, s,
+              { al[3], al[3], al[3], al[3], al[3], al[3], al[3] })
 
 		-- layoutbox widget
 		layoutbox[s] = redflat.widget.layoutbox({ screen = s })
@@ -226,7 +449,7 @@ awful.screen.connect_for_each_screen(
 		tasklist[s] = redflat.widget.tasklist({ screen = s, buttons = tasklist.buttons }, tasklist.style)
 
 		-- panel wibox
-		s.panel = awful.wibar({ position = "bottom", screen = s, height = beautiful.panel_height or 36 })
+		s.panel = awful.wibar({ position = "top", screen = s, height = beautiful.panel_height or 36 })
 
 		-- add widgets to the wibox
 		s.panel:setup {
@@ -237,10 +460,16 @@ awful.screen.connect_for_each_screen(
 				env.wrapper(layoutbox[s], "layoutbox", layoutbox.buttons),
 				separator,
 				env.wrapper(taglist[s], "taglist"),
+				-- separator,
+				-- env.wrapper(kbindicator.widget, "keyboard", kbindicator.buttons),
+				-- separator,
+				-- env.wrapper(mail.widget, "mail", mail.buttons),
 				separator,
-				env.wrapper(kbindicator.widget, "keyboard", kbindicator.buttons),
+        env.wrapper(record_2.widget, "record_2"),
 				separator,
-				env.wrapper(mail.widget, "mail", mail.buttons),
+        env.wrapper(muil.widget, "muil"),
+				separator,
+        env.wrapper(torr, "torr"),
 				separator,
 			},
 			{ -- middle widget
@@ -252,16 +481,24 @@ awful.screen.connect_for_each_screen(
 			},
 			{ -- right widgets
 				layout = wibox.layout.fixed.horizontal,
-
-				separator,
+				-- separator,
 				env.wrapper(sysmon.widget.network, "network"),
 				separator,
 				env.wrapper(sysmon.widget.cpu, "cpu", sysmon.buttons.cpu),
 				env.wrapper(sysmon.widget.ram, "ram", sysmon.buttons.ram),
-				env.wrapper(sysmon.widget.battery, "battery"),
+				env.wrapper(sysmon.widget.mpd, "mpd", sysmon.buttons.mpd),
+				env.wrapper(sysmon.widget.boot_dev, "boot"),
+				env.wrapper(sysmon.widget.root_dev, "root"),
+				env.wrapper(sysmon.widget.var_dev, "var"),
+				env.wrapper(sysmon.widget.home_dev, "home"),
+				-- env.wrapper(sysmon.widget.battery, "battery"),
+        -- env.wrapper(audio_output.widget, "audio_output"),
 				separator,
-				env.wrapper(volume.widget, "volume", volume.buttons),
-				separator,
+        -- env.wrapper(new_record.widget, "new_record"),
+				-- separator,
+				-- env.wrapper(volume.widget, "volume", volume.buttons),
+				env.wrapper(volumecfg.widget, "volume2"),
+				-- separator,
 				env.wrapper(textclock.widget, "textclock"),
 				separator,
 				env.wrapper(tray.widget, "tray", tray.buttons),
@@ -272,13 +509,13 @@ awful.screen.connect_for_each_screen(
 
 -- Desktop widgets
 -----------------------------------------------------------------------------------------------------------------------
-if not lock.desktop then
-	local desktop = require("color.orange.desktop-config") -- load file with desktop widgets configuration
-	desktop:init({
-		env = env,
-		buttons = awful.util.table.join(awful.button({}, 3, function () mymenu.mainmenu:toggle() end))
-	})
-end
+-- if not lock.desktop then
+-- 	local desktop = require("color.orange.desktop-config") -- load file with desktop widgets configuration
+-- 	desktop:init({
+-- 		env = env,
+-- 		buttons = awful.util.table.join(awful.button({}, 3, function () mymenu.mainmenu:toggle() end))
+-- 	})
+-- end
 
 
 -- Active screen edges
